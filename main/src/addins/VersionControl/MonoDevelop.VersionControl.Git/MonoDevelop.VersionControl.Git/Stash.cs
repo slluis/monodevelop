@@ -388,7 +388,8 @@ namespace MonoDevelop.VersionControl.Git
 			if (i != -1) {
 				stashes.RemoveAt (i);
 				Stash next = stashes.FirstOrDefault (ns => ns.PrevStashCommitId == s.CommitId);
-				next.PrevStashCommitId = s.PrevStashCommitId;
+				if (next != null)
+					next.PrevStashCommitId = s.PrevStashCommitId;
 				if (stashes.Count == 0) {
 					// No more stashes. The ref and log files can be deleted.
 					StashRefFile.Delete ();

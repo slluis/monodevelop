@@ -33,6 +33,8 @@ namespace MonoDevelop.VersionControl.Git
 	public partial class PushDialog : Gtk.Dialog
 	{
 		GitRepository repo;
+		string trackingBranch;
+		string trackingRemote;
 		
 		public PushDialog (GitRepository repo)
 		{
@@ -45,7 +47,22 @@ namespace MonoDevelop.VersionControl.Git
 			List<string> list = new List<string> (repo.GetRemotes ().Select (r => r.Name));
 			foreach (string s in list)
 				remoteCombo.AppendText (s);
-			remoteCombo.Active = list.IndexOf (repo.GetCurrentRemote ());
+			
+			Branch b = repo.GetBranches ().FirstOrDefault (br => br.Name == repo.GetCurrentBranch ());
+			if (!string.IsNullOrEmpty (b.Tracking)) {
+				string[] br = b.Tracking.Split ('/');
+				if (br.Length == 2) {
+					trackingRemote = br[0];
+					trackingBranch = br[1];
+				} else {
+					trackingRemote = repo.GetCurrentRemote ();
+					trackingBranch = null;
+				}
+			} else {
+				trackingRemote = repo.GetCurrentRemote ();
+			}
+			
+			remoteCombo.Active = list.IndexOf (trackingRemote);
 			
 			UpdateChangeSet ();
 		}
@@ -69,7 +86,14 @@ namespace MonoDevelop.VersionControl.Git
 			var list = new List<string> (repo.GetRemoteBranches (remoteCombo.ActiveText));
 			foreach (string s in list)
 				branchCombo.AppendText (s);
-			branchCombo.Active = list.IndexOf (repo.GetCurrentBranch ());
+			
+			string br;
+			if (SelectedRemote == trackingRemote && trackingBranch != null)
+				br = trackingBranch;
+			else
+				br = repo.GetCurrentBranch ();
+			
+			branchCombo.Active = list.IndexOf (br);
 		}
 		
 		void UpdateChangeSet ()

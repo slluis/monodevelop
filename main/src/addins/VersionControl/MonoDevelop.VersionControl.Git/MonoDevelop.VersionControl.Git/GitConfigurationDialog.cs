@@ -139,6 +139,10 @@ namespace MonoDevelop.VersionControl.Git
 			if (!listBranches.Selection.GetSelected (out it))
 				return;
 			Branch b = (Branch) storeBranches.GetValue (it, 0);
+			if (b.Name == repo.GetCurrentBranch ()) {
+				MessageService.ShowError (GettextCatalog.GetString ("The active branch can't be deleted. Please switch to another branch before deleting"));
+				return;
+			}
 			if (MessageService.Confirm (GettextCatalog.GetString ("Are you sure you want to delete the branch '{0}'?", b.Name), AlertButton.Delete)) {
 				repo.RemoveBranch (b.Name);
 				FillBranches ();

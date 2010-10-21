@@ -201,6 +201,7 @@ namespace MonoDevelop.VersionControl.Git
 			AddFiles (status.Added, VersionStatus.Versioned | VersionStatus.ScheduledAdd);
 			AddFiles (status.Modified, VersionStatus.Versioned | VersionStatus.Modified);
 			AddFiles (status.Removed, VersionStatus.Versioned | VersionStatus.ScheduledDelete);
+			AddFiles (status.Missing, VersionStatus.Versioned | VersionStatus.ScheduledDelete);
 			AddFiles (status.MergeConflict, VersionStatus.Versioned | VersionStatus.Conflicted);
 			AddFiles (status.Untracked, VersionStatus.Unversioned);
 			
@@ -322,8 +323,14 @@ namespace MonoDevelop.VersionControl.Git
 							break;
 						}
 					}
-					if (commit)
+					if (commit) {
+						// Conflicts resolved. Continue.
+						NGit.Api.AddCommand cmd = git.Add ();
+						foreach (string conflictFile in conflicts.Keys)
+							cmd.AddFilepattern (conflictFile);
+						cmd.Call ();
 						git.Commit ().Call ();
+					}
 				}
 				
 			} finally {
@@ -633,19 +640,38 @@ namespace MonoDevelop.VersionControl.Git
 			var c = GetHeadCommit ();
 			RevTree tree = c.Tree;
 			
+			monitor.BeginTask (GettextCatalog.GetString ("Reverting files"), localPaths.Length);
+			
 			foreach (FilePath fp in localPaths) {
+				if (Directory.Exists (fp)) {
+					Revert (Directory.GetFileSystemEntries (fp).ToFilePathArray (), true, monitor);
+				}
 				string p = ToGitPath (fp);
 				TreeWalk tw = TreeWalk.ForPath (repo, p, tree);
-				RevBlob blob = rw.LookupBlob (tw.GetObjectId (0));
-				if (blob == null)
-					index.Remove (repo.WorkTree, p);
-				else {
-					MemoryStream ms = new MemoryStream ();
-					blob.CopyRawTo (ms);
-					index.Add (repo.WorkTree, p, ms.ToArray ());
-					index.Write ();
+				if (tw != null) {
+					RevBlob blob = rw.LookupBlob (tw.GetObjectId (0));
+					if (blob == null) {
+						index.Remove (repo.WorkTree, fp.ToString ());
+						File.Delete (fp);
+					}
+					else {
+						MemoryStream ms = new MemoryStream ();
+						ObjectLoader loader = repo.Open (blob);
+						byte[] content = loader.GetCachedBytes ();
+						index.Add (repo.WorkTree, fp.ToString (), content);
+						if (!Directory.Exists (fp.ParentDirectory))
+							Directory.CreateDirectory (fp.ParentDirectory);
+						File.WriteAllBytes (fp, content);
+					}
+				} else {
+					index.Remove (repo.WorkTree, fp.ToString ());
 				}
+				monitor.Step (1);
 			}
+			
+			index.Write ();
+			
+			monitor.EndTask ();
 
 			foreach (FilePath p in localPaths)
 				FileService.NotifyFileChanged (p);
@@ -809,6 +835,7 @@ namespace MonoDevelop.VersionControl.Git
 		public void RemoveBranch (string name)
 		{
 			RefUpdate updateRef = repo.UpdateRef ("refs/heads/" + name);
+			updateRef.SetForceUpdate (true);
 			updateRef.Delete ();
 		}
 
