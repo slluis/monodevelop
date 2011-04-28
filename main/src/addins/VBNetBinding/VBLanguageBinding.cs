@@ -37,6 +37,7 @@ using MonoDevelop.Core;
 using MonoDevelop.Projects.Dom;
 using MonoDevelop.Projects.Dom.Parser;
 using MonoDevelop.Projects.CodeGeneration;
+using System.Collections.Generic;
 
 namespace MonoDevelop.VBNetBinding
 {
@@ -108,6 +109,11 @@ namespace MonoDevelop.VBNetBinding
 		public ProjectParameters CreateProjectParameters (XmlElement projectOptions)
 		{
 			return new VBProjectParameters ();
+		}
+		
+		public IEnumerable<string> GetImplicitAssemblyReferences ()
+		{
+			yield break;
 		}
 	
 		class ImprovedCodeDomProvider : Microsoft.VisualBasic.VBCodeProvider

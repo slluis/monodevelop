@@ -137,6 +137,11 @@ namespace MonoDevelop.CSharp
 				ClrVersion.Net_4_0
 			};
 		}
+		
+		public IEnumerable<string> GetImplicitAssemblyReferences ()
+		{
+			yield break;
+		}
 	}
 	
 	internal static class Counters

@@ -742,6 +742,8 @@ namespace MonoDevelop.Projects
 							yield return asm;
 					}
 				}
+				foreach (string asm in LanguageBinding.GetImplicitAssemblyReferences ())
+					yield return asm;
 			}
 		}
 

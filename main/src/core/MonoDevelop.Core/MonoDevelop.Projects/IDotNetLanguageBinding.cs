@@ -29,6 +29,7 @@ using System;
 using System.Xml;
 using MonoDevelop.Core;
 using System.CodeDom.Compiler;
+using System.Collections.Generic;
 
 namespace MonoDevelop.Projects
 {
@@ -46,5 +47,7 @@ namespace MonoDevelop.Projects
 		ClrVersion[] GetSupportedClrVersions ();
 
 		CodeDomProvider GetCodeDomProvider ();
+		
+		IEnumerable<string> GetImplicitAssemblyReferences ();
 	}
 }

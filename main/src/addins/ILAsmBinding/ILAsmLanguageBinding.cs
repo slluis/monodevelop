@@ -32,6 +32,7 @@ using MonoDevelop.Projects;
 using MonoDevelop.Core;
 using MonoDevelop.Projects.Dom.Parser;
 using MonoDevelop.Projects.CodeGeneration;
+using System.Collections.Generic;
 
 namespace ILAsmBinding
 {
@@ -102,6 +103,11 @@ namespace ILAsmBinding
 				ClrVersion.Net_2_0, 
 				ClrVersion.Clr_2_1
 			};
+		}
+		
+		public IEnumerable<string> GetImplicitAssemblyReferences ()
+		{
+			yield break;
 		}
 	}
 }
