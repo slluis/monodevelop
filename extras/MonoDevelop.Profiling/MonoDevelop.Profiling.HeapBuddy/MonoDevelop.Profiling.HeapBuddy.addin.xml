@@ -6,7 +6,7 @@
 	url         = "http://www.monodevelop.com"
 	description = "HeapBuddy Profiler Add-in"
 	category    = "Profiling"
-	version     = "0.2.0">
+	version     = "2.4">
 
 	<Runtime>
 		<Import assembly="MonoDevelop.Profiling.HeapBuddy.dll"/>
