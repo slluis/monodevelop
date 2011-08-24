@@ -6,7 +6,7 @@
 	url         = "http://www.monodevelop.com"
 	description = "HeapShot Profiler Add-in"
 	category    = "Profiling"
-	version     = "0.2.0">
+	version     = "2.5.93">
 
 	<Runtime>
 		<Import assembly="MonoDevelop.Profiling.HeapShot.dll"/>
