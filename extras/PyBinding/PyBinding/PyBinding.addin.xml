@@ -6,7 +6,7 @@
        url         = "http://www.monodevelop.com"
        description = "Python Language binding"
        category    = "Language bindings"
-       version     = "2.7">
+       version     = "2.6">
 
     <Runtime>
         <Import assembly = "PyBinding.dll"/>
