@@ -8,7 +8,7 @@
 	   category    = "Deployment"
        version     = "2.6"
        flags       = "Hidden"
-       compatVersion = "2.6">
+       compatVersion = "2.5.91">
 
 	<Dependencies>
 		<Addin id="Core" version="2.6"/>
