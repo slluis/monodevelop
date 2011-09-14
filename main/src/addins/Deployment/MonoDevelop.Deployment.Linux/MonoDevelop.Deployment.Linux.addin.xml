@@ -8,7 +8,7 @@
 	   category    = "Deployment"
        version     = "2.6"
        flags       = "Hidden"
-       compatVersion = "2.5.92">
+       compatVersion = "2.5.93">
 
 	<Runtime>
 		<Import assembly="MonoDevelop.Deployment.Linux.dll"/>
