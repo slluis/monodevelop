@@ -187,16 +187,8 @@ module Completion =
             None
 
     let (|LetIdentifier|_|) context =
-        if Regex.IsMatch(context.lineToCaret, "\s?(let!?|override|member|for)\s+[^=]+$", RegexOptions.Compiled) then
-             let document = new TextDocument(context.lineToCaret)
-             let syntaxMode = SyntaxModeService.GetSyntaxMode (document, "text/x-fsharp")
-
-             let documentLine = document.GetLine 1
-
-             let chunkStyle = syntaxMode.GetChunks(getColourScheme(), documentLine, context.column, context.lineToCaret.Length)
-                              |> Seq.map (fun c -> c.Style)   
-                              |> Seq.tryHead
-             chunkStyle |> Option.bind (fun cs -> if cs <> "User Types" then Some LetIdentifier else None)
+        if Regex.IsMatch(context.lineToCaret, "\s?(let!?|override|member|for)\s+[^=(]+$", RegexOptions.Compiled) then
+             Some LetIdentifier
         else
             None
 
@@ -617,7 +609,7 @@ type FSharpParameterHintingData (symbol:FSharpSymbolUse) =
     override x.CreateTooltipInformation (_editor, _context, paramIndex: int, _smartWrap:bool, cancel) =
         Async.StartAsTask(getTooltipInformation symbol (Math.Max(paramIndex, 0)), cancellationToken = cancel)
 
-type FsiParameterHintingData (tooltip:MonoDevelop.FSharp.Shared.ParameterTooltip) =
+type FsiParameterHintingData (tooltip: MonoDevelop.FSharp.Shared.ParameterTooltip) =
     inherit ParameterHintingData (null)
 
     override x.ParameterCount =
@@ -786,7 +778,7 @@ type FSharpTextEditorCompletion() =
 
     override x.CompletionLanguage = "F#"
     override x.Initialize() =
-        do x.Editor.SetIndentationTracker (FSharpIndentationTracker(x.Editor))
+        do x.Editor.IndentationTracker <- FSharpIndentationTracker(x.Editor)
         base.Initialize()
 
     /// Provide parameter and method overload information when you type '(', '<' or ','
@@ -804,19 +796,17 @@ type FSharpTextEditorCompletion() =
         base.KeyPress (descriptor)
   
     // Run completion automatically when the user hits '.'
-    override x.HandleCodeCompletionAsync(context, completionChar, token) =
-        if IdeApp.Preferences.EnableAutoCodeCompletion.Value || completionChar = '.' then
-            let computation =
-                Completion.codeCompletionCommandImpl(x.Editor, x.DocumentContext, context, false) 
-                    
-            Async.StartAsTask (computation = computation, cancellationToken = token)
+    override x.HandleCodeCompletionAsync(context, triggerInfo, token) =
+        if IdeApp.Preferences.EnableAutoCodeCompletion.Value then
+           if triggerInfo.CompletionTriggerReason = CompletionTriggerReason.CharTyped && triggerInfo.TriggerCharacter.Value = '.' || triggerInfo.CompletionTriggerReason = CompletionTriggerReason.CompletionCommand  then
+                let computation =
+                    Completion.codeCompletionCommandImpl(x.Editor, x.DocumentContext, context, false) 
+                        
+                Async.StartAsTask (computation = computation, cancellationToken = token)
+            else
+                Task.FromResult null
         else
             Task.FromResult null
-
-    /// Completion was triggered explicitly using Ctrl+Space or by the function above
-    override x.CodeCompletionCommand(context) =
-        Completion.codeCompletionCommandImpl(x.Editor, x.DocumentContext, context, true)
-        |> Async.StartAsTask
 
 
     override x.GetCurrentParameterIndex (startOffset: int, token) =

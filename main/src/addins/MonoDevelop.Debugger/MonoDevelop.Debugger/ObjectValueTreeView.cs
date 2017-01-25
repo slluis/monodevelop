@@ -2415,6 +2415,7 @@ namespace MonoDevelop.Debugger
 	
 	class DebugCompletionDataList: List<MonoDevelop.Ide.CodeCompletion.CompletionData>, ICompletionDataList
 	{
+		public int TriggerWordStart { get; set; }
 		public int TriggerWordLength { get; set; }
 		public bool IsSorted { get; set; }
 		public DebugCompletionDataList (Mono.Debugging.Client.CompletionData data)
@@ -2461,7 +2462,12 @@ namespace MonoDevelop.Debugger
 			if (handler != null)
 				handler (this, e);
 		}
-		
+
+		public virtual CompletionListFilterResult FilterCompletionList (CompletionListFilterInput input)
+		{
+			return null;
+		}
+
 		public event EventHandler CompletionListClosed;
 	}
 	

@@ -186,16 +186,33 @@ namespace MonoDevelop.Ide.CodeCompletion
 
 		public string CurrentCompletionText {
 			get {
-				if (list.SelectedItem != -1 && list.AutoSelect)
-					return DataProvider.GetCompletionText (list.SelectedItem);
+				if (list.SelectedItemIndex != -1 && list.AutoSelect)
+					return DataProvider.GetCompletionText (list.SelectedItemIndex);
 				return null;
 			}
 		}
 
-		public int SelectedItem {
-			get { return list.SelectedItem; }
+		public ICompletionDataList CompletionDataList {
+			get {
+				return completionDataList;
+			}
 		}
-		
+
+		public CompletionData SelectedItem {
+			get {
+				return SelectedItemIndex >= 0 ? completionDataList [SelectedItemIndex] : null;
+			}
+		}
+
+		public int SelectedItemIndex {
+			get { return list.SelectedItemIndex; }
+		}
+
+		public event EventHandler SelectionChanged {
+			add { list.SelectionChanged += value; }
+			remove { list.SelectionChanged += value; }
+		}
+
 		public bool AutoSelect {
 			get { return list.AutoSelect; }
 			set { list.AutoSelect = value; }
@@ -249,7 +266,7 @@ namespace MonoDevelop.Ide.CodeCompletion
 			set;
 		}
 
-		internal ICompletionWidget CompletionWidget {
+		public ICompletionWidget CompletionWidget {
 			get {
 				return list.CompletionWidget;
 			}
@@ -310,7 +327,6 @@ namespace MonoDevelop.Ide.CodeCompletion
 			}
 			var keyChar = descriptor.KeyChar;
 
-			const string commitChars = " <>()[]{}=+-*/%~&^|!.,;:?\"'";
 			if (keyChar == '[' && CloseOnSquareBrackets)
 				return KeyActions.Process | KeyActions.CloseWindow;
 			
@@ -319,8 +335,9 @@ namespace MonoDevelop.Ide.CodeCompletion
 				UpdateWordSelection ();
 				return KeyActions.Process;
 			}
-			
-			if (commitChars.Contains (keyChar)) {
+			var data = DataProvider.GetCompletionData (SelectedItemIndex);
+
+			if (data.IsCommitCharacter (keyChar, PartialWord)) {
 				bool hasMismatches;
 				var curword = PartialWord;
 				int match = FindMatchedEntry (curword, out hasMismatches);
@@ -328,7 +345,7 @@ namespace MonoDevelop.Ide.CodeCompletion
 					string text = DataProvider.GetCompletionText (FilteredItems [match]);
 					if (!text.ToUpper ().StartsWith (curword.ToUpper (), StringComparison.Ordinal))
 						match = -1;	 
-				}
+				}    
 				if (match >= 0 && !hasMismatches && keyChar != '<' && keyChar != ' ') {
 					ResetSizes ();
 					UpdateWordSelection ();
@@ -348,12 +365,12 @@ namespace MonoDevelop.Ide.CodeCompletion
 				if (descriptor.KeyChar == ':') {
 					foreach (var item in FilteredItems) {
 						if (DataProvider.GetText (item).EndsWith (descriptor.KeyChar.ToString (), StringComparison.Ordinal)) {
-							list.SelectedItem = item;
+							list.SelectedItemIndex = item;
 							return KeyActions.Complete | KeyActions.CloseWindow | KeyActions.Ignore;
 						}
 					}
 				} else {
-					var selectedItem = list.SelectedItem;
+					var selectedItem = list.SelectedItemIndex;
 					if (selectedItem < 0 || selectedItem >= DataProvider.ItemCount)
 						return KeyActions.CloseWindow;
 					var text = DataProvider.GetText (selectedItem);
@@ -476,6 +493,8 @@ namespace MonoDevelop.Ide.CodeCompletion
 //				// AltGr
 //				return KeyActions.Process;
 			}
+			var data = SelectedItem;
+
 			if (descriptor.KeyChar == '\0')
 				return KeyActions.Process;
 
@@ -485,19 +504,28 @@ namespace MonoDevelop.Ide.CodeCompletion
 			if (char.IsDigit (descriptor.KeyChar) && string.IsNullOrEmpty (CurrentCompletionText))
 			    return KeyActions.CloseWindow | KeyActions.Process;
 
+			if (data != null && data.MuteCharacter (descriptor.KeyChar, PartialWord)) {
+				if (data.IsCommitCharacter (descriptor.KeyChar, PartialWord)) {
+					return KeyActions.CloseWindow | KeyActions.Ignore | KeyActions.Complete;
+				} 
+				return KeyActions.CloseWindow | KeyActions.Ignore;
+			}
+
+
 			// special case end with punctuation like 'param:' -> don't input double punctuation, otherwise we would end up with 'param::'
 			if (char.IsPunctuation (descriptor.KeyChar) && descriptor.KeyChar != '_') {
 				if (descriptor.KeyChar == ':') {
 					foreach (var item in FilteredItems) {
 						if (DataProvider.GetText (item).EndsWith (descriptor.KeyChar.ToString (), StringComparison.Ordinal)) {
-							list.SelectedItem = item;
+							list.SelectedItemIndex = item;
 							return KeyActions.Complete | KeyActions.CloseWindow | KeyActions.Ignore;
 						}
 					}
 				} else {
-					var selectedItem = list.SelectedItem;
-					if (selectedItem < 0 || selectedItem >= DataProvider.ItemCount)
+					var selectedItem = list.SelectedItemIndex;
+					if (selectedItem < 0 || selectedItem >= DataProvider.ItemCount) {
 						return KeyActions.CloseWindow;
+					}
 					if (DataProvider.GetText (selectedItem).EndsWith (descriptor.KeyChar.ToString (), StringComparison.Ordinal)) {
 						return KeyActions.Complete | KeyActions.CloseWindow | KeyActions.Ignore;
 					}

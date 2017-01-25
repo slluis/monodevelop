@@ -36,6 +36,7 @@ namespace MonoDevelop.Ide.CodeCompletion
 {
 	public interface ICompletionDataList : IList<CompletionData>
 	{
+		int TriggerWordStart { get; }
 		int TriggerWordLength { get; }
 
 		bool IsSorted { get; }
@@ -53,6 +54,13 @@ namespace MonoDevelop.Ide.CodeCompletion
 		
 		void OnCompletionListClosed (EventArgs e);
 		event EventHandler CompletionListClosed;
+
+		/// <summary>
+		/// Gives the abilit to override the custom filtering
+		/// </summary>
+		/// <returns>The filtered completion list, or null if the default list should be taken.</returns>
+		/// <param name="input">Contains all information needed to filter the list.</param>
+		CompletionListFilterResult FilterCompletionList (CompletionListFilterInput input);
 	}
 	
 	
@@ -69,6 +77,7 @@ namespace MonoDevelop.Ide.CodeCompletion
 	
 	public class CompletionDataList : List<CompletionData>, ICompletionDataList
 	{
+		public int TriggerWordStart { get; set; } = -1;
 		public int TriggerWordLength { get; set; }
 
 		public bool IsSorted { get; set; }
@@ -81,7 +90,12 @@ namespace MonoDevelop.Ide.CodeCompletion
 		public bool AutoCompleteEmptyMatchOnCurlyBrace { get; set; }
 		public CompletionSelectionMode CompletionSelectionMode { get; set; }
 		public bool CloseOnSquareBrackets { get; set; }
-		
+
+		public virtual CompletionListFilterResult FilterCompletionList (CompletionListFilterInput input)
+		{
+			return null;
+		}
+
 		List<ICompletionKeyHandler> keyHandler = new List<ICompletionKeyHandler> ();
 		public IEnumerable<ICompletionKeyHandler> KeyHandler {
 			get { return keyHandler; }
